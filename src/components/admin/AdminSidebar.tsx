@@ -3,6 +3,16 @@ import { useState } from "react";
 import { StudentDetailsModal } from "./StudentDetailsModal";
 import { RecommendationsModal } from "./RecommendationsModal";
 
+// Definimos la interfaz para los datos del estudiante
+export interface StudentData {
+  id: string;
+  nombre: string;
+  apellido: string;
+  tasa_exito: number;
+  promedio_general: number;
+  ciclo: string;
+}
+
 interface AdminSidebarProps {
   selectedStudentId: string | null;
 }
@@ -18,7 +28,7 @@ const menuItems = [
 
 export const AdminSidebar = ({ selectedStudentId }: AdminSidebarProps) => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [studentData, setStudentData] = useState<any>(null);
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
 
   const handleItemClick = (action: string) => {
     if (!selectedStudentId && action !== "dashboard" && action !== "settings") {

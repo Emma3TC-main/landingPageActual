@@ -1,12 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import faqHeroImg from "@/assets/faq-hero.jpg";
+import { useNavigate } from "react-router-dom";
 
 interface FAQProps {
   onCTAClick?: () => void;
 }
 
 export const FAQ = ({ onCTAClick }: FAQProps) => {
+    const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate("/registro");
+  };
+
   const faqs = [
     {
       id: "faq1",
@@ -105,7 +112,7 @@ export const FAQ = ({ onCTAClick }: FAQProps) => {
             <Button 
               size="lg" 
               variant="cta" 
-              onClick={onCTAClick}
+              onClick={handleClick}
               className="text-lg px-12 py-6"
             >
               Inscribirme Ahora

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -11,8 +11,16 @@ interface RecommendationsModalProps {
   studentId: string | null;
 }
 
+interface Tip {
+  id: string;
+  student_id: string;
+  categoria: string;
+  contenido: string;
+  created_at: string;
+}
+
 export const RecommendationsModal = ({ isOpen, onClose, studentId }: RecommendationsModalProps) => {
-  const [tips, setTips] = useState<any[]>([]);
+  const [tips, setTips] = useState<Tip[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -33,15 +41,15 @@ export const RecommendationsModal = ({ isOpen, onClose, studentId }: Recommendat
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTips(data || []);
-    } catch (error) {
+      setTips((data as Tip[]) || []);
+    } catch (error: unknown) {
       console.error('Error loading tips:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const groupedTips = tips.reduce((acc: any, tip) => {
+  const groupedTips = tips.reduce<Record<string, Tip[]>>((acc, tip) => {
     if (!acc[tip.categoria]) {
       acc[tip.categoria] = [];
     }
@@ -71,14 +79,14 @@ export const RecommendationsModal = ({ isOpen, onClose, studentId }: Recommendat
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.entries(groupedTips).map(([categoria, categoryTips]: [string, any]) => (
+            {Object.entries(groupedTips).map(([categoria, categoryTips]) => (
               <Card key={categoria}>
                 <CardHeader>
                   <CardTitle className="text-lg">{categoria}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-3">
-                    {categoryTips.map((tip: any) => (
+                    {categoryTips.map((tip) => (
                       <li key={tip.id} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
                         <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0"></div>
                         <p className="text-sm flex-1">{tip.contenido}</p>

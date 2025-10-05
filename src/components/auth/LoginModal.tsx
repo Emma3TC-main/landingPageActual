@@ -19,10 +19,10 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       // Autenticación real con Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -32,35 +32,39 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
 
       if (authError) throw authError;
 
-      if (authData.user) {
+      if (authData?.user) {
         // Verificar si el usuario es admin
         const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', authData.user.id)
-          .eq('role', 'admin')
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", authData.user.id)
+          .eq("role", "admin")
           .maybeSingle();
 
         if (roleError) throw roleError;
 
         if (!roleData) {
           await supabase.auth.signOut();
-          throw new Error('No tienes permisos de administrador');
+          throw new Error("No tienes permisos de administrador");
         }
 
         toast({
           title: "Inicio de sesión exitoso",
           description: "Redirigiendo al panel de administración...",
         });
-        
+
         onClose();
         navigate("/admin");
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+
+      const message =
+        error instanceof Error ? error.message : "Credenciales incorrectas";
+
       toast({
         title: "Error al iniciar sesión",
-        description: error.message || "Credenciales incorrectas",
+        description: message,
         variant: "destructive",
       });
     } finally {

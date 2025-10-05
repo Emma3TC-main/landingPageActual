@@ -1,4 +1,5 @@
-project_id = "bpoyfhwxuigeynotgvka"
+project_id = "lvngbwuovwrycpzhhqdr"
 
 [functions.generate-student-tips]
-verify_jwt = false
+verify_jwt = true      # recomendado: exige JWT (solo usuarios logueados)
+# si quieres que sea pública temporalmente, usa false (no recomendado)

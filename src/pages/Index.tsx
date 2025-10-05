@@ -11,6 +11,7 @@ import { ContactButton } from "@/components/landing/ContactButton";
 import { Navbar } from "@/components/layout/Navbar";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { supabase } from "@/integrations/supabase/client";
+import { SeasonalDecorations } from "@/components/landing/SeasonalDecoration";
 
 const Index = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -40,23 +41,31 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar 
-        onLoginClick={handleLoginClick}
-        isAuthenticated={isAuthenticated}
-        onLogout={handleLogout}
-      />
-      <div className="pt-16">
-        <Hero />
-        <ProblemSolution />
-        <TechStack />
-        <Benefits />
-        <Curriculum />
-        <Testimonials />
-        <FAQ />
-        <Footer />
+    <div className="min-h-screen relative">
+      {/* 🎨 Decoración al fondo */}
+      <SeasonalDecorations className="fixed inset-0 -z-0 pointer-events-none" />
+
+      {/* Contenido principal */}
+      <div className="relative z-10">
+        <Navbar 
+          onLoginClick={handleLoginClick}
+          isAuthenticated={isAuthenticated}
+          onLogout={handleLogout}
+        />
+
+        <div className="pt-16">
+          <Hero />
+          <ProblemSolution />
+          <TechStack />
+          <Benefits />
+          <Curriculum />
+          <Testimonials />
+          <FAQ />
+          <Footer />
+        </div>
       </div>
-      
+
+      {/* Elementos flotantes */}
       <LoginModal isOpen={isLoginModalOpen} onClose={handleCloseLoginModal} />
       <ContactButton />
     </div>

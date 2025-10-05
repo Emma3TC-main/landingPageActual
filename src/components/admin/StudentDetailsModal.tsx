@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Award, Clock } from "lucide-react";
+import type { StudentData } from "./AdminSidebar";
 
 interface StudentDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  studentData: any;
+  studentData: StudentData | null;
 }
 
 export const StudentDetailsModal = ({ isOpen, onClose, studentData }: StudentDetailsModalProps) => {

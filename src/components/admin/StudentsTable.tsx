@@ -21,7 +21,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Search, FileDown, Filter, Edit, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { Search, FileDown, Filter, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,13 +33,26 @@ interface StudentsTableProps {
   onSelectStudent: (id: string | null) => void;
 }
 
+interface Student {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  avatar?: string;
+  precio?: number;
+  ciclo?: string;
+  promedio_general?: number;
+  tasa_exito?: number;
+  created_at?: string;
+}
+
 export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTableProps) => {
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedForAction, setSelectedForAction] = useState<string[]>([]);
   const [showPersonalityModal, setShowPersonalityModal] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState<any>(null);
+  const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,14 +62,14 @@ export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTa
   const loadStudents = async () => {
     try {
       const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("students")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setStudents(data || []);
-    } catch (error: any) {
-      console.error('Error loading students:', error);
+      setStudents((data as Student[]) || []);
+    } catch (error: unknown) {
+      console.error("Error loading students:", error);
       toast({
         title: "Error",
         description: "Error al cargar los alumnos",
@@ -97,10 +110,7 @@ export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTa
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('students')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("students").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -110,20 +120,20 @@ export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTa
       });
 
       loadStudents();
-      
+
       if (selectedStudentId === id) {
         onSelectStudent(null);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Error al eliminar alumno",
+        description: error instanceof Error ? error.message : "Error al eliminar alumno",
         variant: "destructive",
       });
     }
   };
 
-  const handleRowClick = (student: any) => {
+  const handleRowClick = (student: Student) => {
     if (selectedStudentId === student.id) {
       onSelectStudent(null);
     } else {
@@ -131,7 +141,7 @@ export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTa
     }
   };
 
-  const openPersonalityModal = (student: any, e: React.MouseEvent) => {
+  const openPersonalityModal = (student: Student, e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentStudent(student);
     setShowPersonalityModal(true);
@@ -248,7 +258,7 @@ export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTa
                       key={student.id}
                       onClick={() => handleRowClick(student)}
                       className={`cursor-pointer transition-colors ${
-                        selectedStudentId === student.id ? 'bg-primary/10' : 'hover:bg-muted/50'
+                        selectedStudentId === student.id ? "bg-primary/10" : "hover:bg-muted/50"
                       }`}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -262,11 +272,14 @@ export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTa
                           <Avatar className="h-10 w-10">
                             <AvatarImage src={student.avatar} alt={student.nombre} />
                             <AvatarFallback>
-                              {student.nombre[0]}{student.apellido[0]}
+                              {student.nombre[0]}
+                              {student.apellido[0]}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium">{student.apellido}, {student.nombre}</p>
+                            <p className="font-medium">
+                              {student.apellido}, {student.nombre}
+                            </p>
                           </div>
                         </div>
                       </TableCell>
@@ -275,17 +288,20 @@ export const StudentsTable = ({ selectedStudentId, onSelectStudent }: StudentsTa
                         <Checkbox onClick={(e) => e.stopPropagation()} />
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${student.precio?.toFixed(2) || '0.00'}
+                        ${student.precio?.toFixed(2) || "0.00"}
                       </TableCell>
                       <TableCell>
                         <span className="px-2 py-1 bg-primary/10 rounded text-sm">
-                          {student.ciclo || 'N/A'}
+                          {student.ciclo || "N/A"}
                         </span>
                       </TableCell>
                       <TableCell>{student.promedio_general || 0}</TableCell>
                       <TableCell>{student.tasa_exito || 0}%</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex gap-2 justify-end"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button
                             size="sm"
                             variant="outline"
