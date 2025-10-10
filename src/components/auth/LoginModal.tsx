@@ -24,7 +24,7 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
     setIsLoading(true);
 
     try {
-      // Autenticación real con Supabase
+      // 1. Autenticación con Supabase (esto no cambia)
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -33,35 +33,49 @@ export const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
       if (authError) throw authError;
 
       if (authData?.user) {
-        // Verificar si el usuario es admin
+        // CAMBIO 1: La consulta ahora busca CUALQUIER rol, no solo 'admin'.
+        // Usamos .single() porque esperamos que cada usuario tenga exactamente un rol.
         const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", authData.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
+          .single(); // .single() en lugar de .maybeSingle()
 
         if (roleError) throw roleError;
 
+        // CAMBIO 2: Verificamos si se encontró un rol.
         if (!roleData) {
-          await supabase.auth.signOut();
-          throw new Error("No tienes permisos de administrador");
+          await supabase.auth.signOut(); // Por seguridad, cerramos sesión si no tiene rol.
+          throw new Error("El usuario no tiene un rol asignado.");
         }
 
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Redirigiendo al panel de administración...",
-        });
+        // CAMBIO 3: Lógica de redirección basada en el rol encontrado.
+        const userRole = roleData.role;
 
-        onClose();
-        navigate("/admin");
+        if (userRole === 'admin') {
+          toast({
+            title: "Inicio de sesión de Administrador exitoso",
+            description: "Redirigiendo al panel de administración...",
+          });
+          onClose();
+          navigate("/admin");
+        } else if (userRole === 'user') {
+          toast({
+            title: "Inicio de sesión de Estudiante exitoso",
+            description: "Redirigiendo a tu dashboard...",
+          });
+          onClose();
+          navigate("/dashboard"); // <-- ¡Redirigimos al dashboard del estudiante!
+        } else {
+          // Si el rol no es ni 'admin' ni 'user'
+          await supabase.auth.signOut();
+          throw new Error("Rol de usuario no reconocido.");
+        }
       }
     } catch (error: unknown) {
       console.error("Login error:", error);
-
       const message =
         error instanceof Error ? error.message : "Credenciales incorrectas";
-
       toast({
         title: "Error al iniciar sesión",
         description: message,
