@@ -24,7 +24,7 @@ const Navbar = () => {
               <MenuIcon />
             </button>
             <div className="text-2xl font-bold tracking-wider text-primary">
-              CONATE
+              NAJE
             </div>
         </div>
         <div className="hidden md:flex items-center space-x-2">
