@@ -7,29 +7,33 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Registro from "./pages/Registro";
 import NotFound from "./pages/NotFound";
-import StudentDashboard from "./pages/StudentDashboard"; // <--- IMPORTA LA NUEVA PÁGINA
+import StudentDashboard from "./pages/StudentDashboard";
+import Courses from "./pages/Courses"; // <-- CAMBIO 1: Importamos la nueva página de cursos
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<Admin />} />
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/admin" element={<Admin />} />
           {/* La vista de admin a un perfil específico */}
-          <Route path="/admin/student/:studentId" element={<StudentDashboard />} />
+          <Route path="/admin/student/:studentId" element={<StudentDashboard />} />
           {/* La vista del propio estudiante a su perfil */}
-          <Route path="/dashboard" element={<StudentDashboard />} />
-          <Route path="/registro" element={<Registro />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+          <Route path="/dashboard" element={<StudentDashboard />} />
+          {/* --- CAMBIO 2: Añadimos la nueva ruta para la página de cursos --- */}
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/registro" element={<Registro />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
+
