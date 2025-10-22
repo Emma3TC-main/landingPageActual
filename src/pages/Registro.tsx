@@ -1,296 +1,163 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+// Esquema de validación para el primer paso (sin cambios)
+const stepOneSchema = z.object({
+  nombre: z.string().min(2, "El nombre es muy corto"),
+  apellido: z.string().min(2, "El apellido es muy corto"),
+  email: z.string().email("Email inválido"),
+  ciclo: z.string().min(1, "El ciclo es requerido"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+});
+
+const learningStyles = [
+  { value: "Visual", label: "Visual", description: "Aprendo mejor con diagramas y mapas conceptuales" },
+  { value: "Auditivo", label: "Auditivo", description: "Aprendo mejor escuchando y en discusiones" },
+  { value: "Kinestésico", label: "Kinestésico", description: "Aprendo mejor con práctica y ejercicios" },
+  { value: "Visual-Kinestésico", label: "Visual-Kinestésico", description: "Combino diagramas con práctica" },
+  { value: "Auditivo-Visual", label: "Auditivo-Visual", description: "Combino lectura con audio" },
+];
 
 const Registro = () => {
+  const [step, setStep] = useState(1);
+  // --- CAMBIO 1: Damos un tipo más específico al estado del formulario ---
+  const [formData, setFormData] = useState<z.infer<typeof stepOneSchema> | null>(null);
+  const [estiloAprendizaje, setEstiloAprendizaje] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Datos del formulario
-  const [formData, setFormData] = useState({
-    nombre: "",
-    apellido: "",
-    email: "",
-    ciclo: "2024-2",
-    personalidad: "",
+
+  const form = useForm<z.infer<typeof stepOneSchema>>({
+    resolver: zodResolver(stepOneSchema),
+    defaultValues: { nombre: "", apellido: "", email: "", ciclo: "", password: "" },
   });
 
-  const personalidadOptions = [
-    { value: "Visual", label: "Visual", description: "Aprendo mejor con diagramas y mapas conceptuales" },
-    { value: "Auditivo", label: "Auditivo", description: "Aprendo mejor escuchando y en discusiones" },
-    { value: "Kinestésico", label: "Kinestésico", description: "Aprendo mejor con práctica y ejercicios" },
-    { value: "Visual-Kinestésico", label: "Visual-Kinestésico", description: "Combino diagramas con práctica" },
-    { value: "Auditivo-Visual", label: "Auditivo-Visual", description: "Combino lectura con audio" },
-  ];
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleBasicInfoSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.nombre || !formData.apellido || !formData.email) {
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleStepOneSubmit = (values: z.infer<typeof stepOneSchema>) => {
+    setFormData(values);
     setStep(2);
   };
 
-  const generateStudentStats = () => {
-    const promedio = (Math.random() * 6 + 12).toFixed(1); // 12-18
-    const tasaExito = (Math.random() * 30 + 65).toFixed(1); // 65-95
-    const precio = Math.random() > 0.5 ? 1500 : 1800;
-    
-    return {
-      promedio_general: parseFloat(promedio),
-      tasa_exito: parseFloat(tasaExito),
-      precio: precio,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.nombre}`,
-    };
-  };
-
-  const generateMonthlyStats = (studentId: string) => {
-    const months = ['Enero', 'Febrero', 'Marzo'];
-    return months.map(mes => {
-      const promedio = (Math.random() * 6 + 12).toFixed(1);
-      const asistencia = (Math.random() * 20 + 80).toFixed(1);
-      const aprobadas = Math.floor(Math.random() * 3 + 3); // 3-5
-      const reprobadas = Math.floor(Math.random() * 3); // 0-2
-      
-      return {
-        student_id: studentId,
-        mes,
-        promedio: parseFloat(promedio),
-        asistencia: parseFloat(asistencia),
-        aprobadas,
-        reprobadas,
-      };
-    });
-  };
-
-  const handleFinalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.personalidad) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona tu estilo de aprendizaje",
-        variant: "destructive",
-      });
+  const handleFinalSubmit = async () => {
+    if (!estiloAprendizaje) {
+      toast({ title: "Por favor, selecciona un estilo de aprendizaje.", variant: "destructive" });
+      return;
+    }
+    // --- CAMBIO 2: Verificación más robusta ---
+    if (!formData) {
+      toast({ title: "Error: Faltan los datos del primer paso.", variant: "destructive" });
+      setStep(1); // Regresa al paso 1 si faltan datos
       return;
     }
 
     setIsLoading(true);
+    console.log("Iniciando envío final..."); // <-- LOG 1
+
+    const finalData = { ...formData, estiloAprendizaje };
 
     try {
-      // Generar estadísticas automáticas
-      const stats = generateStudentStats();
+      console.log("Enviando datos a la Edge Function 'create-student':", finalData); // <-- LOG 2
       
-      // 1. Insertar estudiante
-      const { data: student, error: studentError } = await supabase
-        .from('students')
-        .insert({
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          email: formData.email,
-          ciclo: formData.ciclo,
-          ...stats,
-        })
-        .select()
-        .single();
-
-      if (studentError) throw studentError;
-
-      // 2. Insertar personalidad
-      const personalityOption = personalidadOptions.find(p => p.value === formData.personalidad);
-      const { error: personalityError } = await supabase
-        .from('student_personalities')
-        .insert({
-          student_id: student.id,
-          tipo_personalidad: formData.personalidad,
-          estilo_aprendizaje: personalityOption?.description || '',
-          descripcion: `Estudiante ${formData.personalidad.toLowerCase()} con interés en desarrollo full-stack`,
-        });
-
-      if (personalityError) throw personalityError;
-
-      // 3. Insertar estadísticas mensuales
-      const monthlyStats = generateMonthlyStats(student.id);
-      const { error: statsError } = await supabase
-        .from('student_stats')
-        .insert(monthlyStats);
-
-      if (statsError) throw statsError;
-
-      toast({
-        title: "¡Registro exitoso!",
-        description: "Tu perfil ha sido creado. Redirigiendo...",
+      const { data, error } = await supabase.functions.invoke('create-student', {
+        body: { studentData: finalData },
       });
 
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
+      console.log("Respuesta de la Edge Function:", { data, error }); // <-- LOG 3
+
+      if (error) throw new Error(`Error de red o de la función: ${error.message}`);
+      if (data.error) throw new Error(`Error devuelto por la lógica de la función: ${data.error}`);
+      
+      toast({ title: "¡Registro exitoso!", description: "Serás redirigido a tu dashboard." });
+      
+      console.log("Iniciando sesión con el nuevo usuario..."); // <-- LOG 4
+      
+      // --- CAMBIO 3: Acceso seguro a los datos ---
+      await supabase.auth.signInWithPassword({
+        email: finalData.email,
+        password: finalData.password,
+      });
+      
+      console.log("Redirigiendo al dashboard..."); // <-- LOG 5
+      navigate('/dashboard');
 
     } catch (error: any) {
-      console.error('Error al registrar:', error);
-      toast({
-        title: "Error al registrar",
-        description: error.message || "Ocurrió un error durante el registro",
-        variant: "destructive",
-      });
+      console.error("Error detallado en handleFinalSubmit:", error); // <-- LOG DE ERROR
+      toast({ title: "Error en el registro", description: error.message, variant: "destructive" });
     } finally {
+      console.log("Finalizando envío."); // <-- LOG FINAL
       setIsLoading(false);
     }
   };
-
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <Button
-          variant="ghost"
-          onClick={() => step === 1 ? navigate("/") : setStep(1)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver
-        </Button>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-card p-8 rounded-lg shadow-lg">
+        <button onClick={() => step === 2 ? setStep(1) : navigate('/')} className="text-sm text-muted-foreground mb-4 flex items-center">
+          &larr; Volver
+        </button>
 
-        <Card className="shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-3xl bg-gradient-primary bg-clip-text text-transparent">
-              {step === 1 ? "Regístrate en Naje" : "Test de Personalidad"}
-            </CardTitle>
-            <CardDescription>
-              {step === 1 
-                ? "Completa tus datos básicos para comenzar" 
-                : "Selecciona tu estilo de aprendizaje preferido"}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {step === 1 ? (
-              <form onSubmit={handleBasicInfoSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nombre">Nombre</Label>
-                    <Input
-                      id="nombre"
-                      placeholder="Tu nombre"
-                      value={formData.nombre}
-                      onChange={(e) => handleInputChange("nombre", e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="apellido">Apellido</Label>
-                    <Input
-                      id="apellido"
-                      placeholder="Tu apellido"
-                      value={formData.apellido}
-                      onChange={(e) => handleInputChange("apellido", e.target.value)}
-                      required
-                    />
-                  </div>
+        {step === 1 && (
+          <>
+            <h1 className="text-3xl font-bold text-primary mb-2 text-center">Regístrate en Naje</h1>
+            <p className="text-muted-foreground text-center mb-6">Completa tus datos básicos para comenzar</p>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleStepOneSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="nombre" render={({ field }) => ( <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                  <FormField control={form.control} name="apellido" render={({ field }) => ( <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ciclo">Ciclo Académico</Label>
-                  <Input
-                    id="ciclo"
-                    placeholder="Ej: 2024-2"
-                    value={formData.ciclo}
-                    onChange={(e) => handleInputChange("ciclo", e.target.value)}
-                    required
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" size="lg">
-                  Continuar al Test
-                </Button>
+                <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="password" render={({ field }) => ( <FormItem><FormLabel>Contraseña</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <FormField control={form.control} name="ciclo" render={({ field }) => ( <FormItem><FormLabel>Ciclo Académico</FormLabel><FormControl><Input placeholder="Ej: 2024-2" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                <Button type="submit" className="w-full">Continuar al Test</Button>
               </form>
-            ) : (
-              <form onSubmit={handleFinalSubmit} className="space-y-6">
-                <div className="space-y-4">
-                  <Label>¿Cómo prefieres aprender?</Label>
-                  <RadioGroup
-                    value={formData.personalidad}
-                    onValueChange={(value) => handleInputChange("personalidad", value)}
-                  >
-                    {personalidadOptions.map((option) => (
-                      <div
-                        key={option.value}
-                        className="flex items-start space-x-3 space-y-0 rounded-lg border p-4 hover:bg-accent transition-colors"
-                      >
-                        <RadioGroupItem value={option.value} id={option.value} />
-                        <div className="space-y-1 leading-none">
-                          <Label
-                            htmlFor={option.value}
-                            className="font-semibold cursor-pointer"
-                          >
-                            {option.label}
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            {option.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
+            </Form>
+            <p className="text-xs text-muted-foreground text-center mt-4">Paso 1 de 2</p>
+          </>
+        )}
 
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Nota:</strong> Basándonos en tu perfil, generaremos automáticamente
-                    tus estadísticas iniciales, cursos recomendados y plan de estudios personalizado.
-                  </p>
-                </div>
-
-                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Procesando registro...
-                    </>
-                  ) : (
-                    "Completar Registro"
-                  )}
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Paso {step} de 2
-          </p>
-        </div>
+        {step === 2 && (
+          <>
+            <h1 className="text-3xl font-bold text-primary mb-2 text-center">Test de Personalidad</h1>
+            <p className="text-muted-foreground text-center mb-6">Selecciona tu estilo de aprendizaje preferido</p>
+            <RadioGroup onValueChange={setEstiloAprendizaje} value={estiloAprendizaje} className="space-y-3">
+              <p className="font-semibold">¿Cómo prefieres aprender?</p>
+              {learningStyles.map(style => (
+                <Label key={style.value} className="flex items-center space-x-3 border border-border p-4 rounded-md hover:bg-secondary cursor-pointer">
+                  <RadioGroupItem value={style.value} id={style.value} />
+                  <div>
+                    <p className="font-medium">{style.label}</p>
+                    <p className="text-sm text-muted-foreground">{style.description}</p>
+                  </div>
+                </Label>
+              ))}
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground mt-6">
+              <b>Nota:</b> Basándonos en tu perfil, generaremos automáticamente tus estadísticas iniciales y recomendaciones.
+            </p>
+            <Button onClick={handleFinalSubmit} disabled={isLoading} className="w-full mt-4">
+              {isLoading ? "Completando..." : "Completar Registro"}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-4">Paso 2 de 2</p>
+          </>
+        )}
       </div>
     </div>
   );
