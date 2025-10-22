@@ -105,11 +105,11 @@ export const Footer = ({ onCTAClick }: FooterProps) => {
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-tech-blue" />
-                <span>+54 9 11 1234-5678</span>
+                <span>+51 950322527</span>
               </div>
               <div className="flex items-center gap-3">
                 <MessageCircle className="w-4 h-4 text-tech-green" />
-                <span>WhatsApp: +54 9 11 1234-5678</span>
+                <span>WhatsApp: +51 950322527</span>
               </div>
             </div>
           </div>
@@ -149,7 +149,7 @@ export const Footer = ({ onCTAClick }: FooterProps) => {
         {/* Bottom Bar */}
         <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
           <div>
-            <p>&copy; 2024 FullStack Pro. Todos los derechos reservados.</p>
+            <p>&copy; 2025 NAJE. Todos los derechos reservados.</p>
           </div>
           <div className="flex gap-6">
             <a href="#" className="hover:text-tech-blue transition-colors">
